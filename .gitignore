@@ -89,4 +89,5 @@ pyrightconfig.json
 /data
 /test
 /export
+/.vscode
 .gut
