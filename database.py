@@ -51,7 +51,7 @@ async def get_posts_from_database(ids: list[str]) -> list[Post]:
     posts = []
     for i in range(len(results)):
         try:
-            post = Post(id=ids[i][len(prefix):], title=results[i][0].decode("utf-8"), url=results[i][1].decode("utf-8"),
+            post = Post(id=ids[i], title=results[i][0].decode("utf-8"), url=results[i][1].decode("utf-8"),
                         score=int(results[i][2]), time=int(results[i][3]), comments=int(results[i][4]), author=results[i][5].decode("utf-8"))
             posts.append(post)
         except:

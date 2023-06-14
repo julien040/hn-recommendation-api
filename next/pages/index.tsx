@@ -1,118 +1,288 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Head from "next/head";
+import Link from "next/link";
+import Skeleton from "../components/skeleton";
+import PostComponent from "../components/posts";
+import type { InferGetServerSidePropsType, GetServerSideProps } from "next";
 
-const inter = Inter({ subsets: ['latin'] })
+async function getDataFromAPI(text: string): Promise<Post[]> {
+  let isURL = false;
+  try {
+    new URL(text);
+    isURL = true;
+  } catch (error) {
+    isURL = false;
+  }
 
-export default function Home() {
+  let urlAPI = "";
+
+  if (isURL) {
+    urlAPI =
+      process.env.VECTOR_SEARCH_API_URL + "?url=" + encodeURIComponent(text);
+  } else {
+    urlAPI =
+      process.env.VECTOR_SEARCH_API_URL +
+      "/text?text=" +
+      encodeURIComponent(text);
+  }
+
+  const response = await fetch(urlAPI);
+
+  if (!response.ok) {
+    try {
+      const data = await response.json();
+      if (data["detail"] === undefined) {
+        throw new Error("Something went wrong");
+      }
+
+      throw new Error(data["detail"]);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Something went wrong");
+    }
+  } else {
+    const data = await response.json();
+
+    return data["data"];
+  }
+}
+
+export const getServerSideProps: GetServerSideProps<{
+  posts: Post[];
+  query: string;
+  error?: string;
+}> = async ({ req, res, query }) => {
+  res.setHeader("Cache-Control", "s-maxage=3600");
+
+  let textURLParams = query?.q;
+
+  if (!textURLParams || Array.isArray(textURLParams)) {
+    return {
+      props: {
+        posts: [],
+        query: "",
+      },
+    };
+  }
+
+  try {
+    const posts = await getDataFromAPI(textURLParams);
+    return {
+      props: {
+        posts,
+        query: textURLParams,
+      },
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        props: {
+          posts: [],
+          query: textURLParams,
+          error: error.message,
+        },
+      };
+    }
+  }
+  return {
+    props: {
+      posts: [],
+      query: textURLParams,
+      error: "Something went wrong",
+    },
+  };
+};
+
+export type Post = {
+  id: number;
+  title: string;
+  url: string;
+  score: number;
+  comments: number;
+  time: number;
+  author: string;
+};
+
+export default function Home({
+  posts,
+  query,
+  error,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const router = useRouter();
+  const path = router.asPath;
+  const [InputText, setInputText] = useState<string>(query);
+  const [Submitted, setSubmitted] = useState<boolean>(false);
+  const [ErrorText, setErrorText] = useState(!error ? "" : error);
+
+  // Reset state when the URL changes
+  useEffect(() => {
+    setInputText(query);
+    setSubmitted(false);
+    setErrorText("");
+  }, [path, query]);
+
+  function pushExample(text: string) {
+    setInputText(text);
+    setSubmitted(true);
+    error = undefined;
+    posts.length = 0;
+    router.push("/?q=" + encodeURIComponent(text));
+  }
+
+  // Called when the user clicks the submit button
+  function buttonClick() {
+    // Check if the input is empty
+    if (InputText.length === 0) {
+      setErrorText("Please enter a query");
+      setTimeout(() => {
+        setErrorText("");
+      }, 3000);
+      return;
+    }
+
+    if (Submitted) {
+      return;
+    }
+
+    if (InputText === query) {
+      setErrorText("Please enter a different text");
+      setTimeout(() => {
+        setErrorText("");
+      }, 3000);
+      return;
+    }
+    setSubmitted(true);
+    error = undefined;
+    posts.length = 0;
+    router.push("/?q=" + encodeURIComponent(InputText));
+  }
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+    <main className="min-h-[inherit]">
+      <Head>
+        <title>HN - Recommendation {InputText ? "for " + InputText : ""}</title>
+      </Head>
+      <Link href="/">
+        <h1 className="text-2xl md:text-4xl font-bold leading-1">
+          HN recommendation
+        </h1>
+      </Link>
+      <p className="text-slate-600">
+        Get popular Hacker News posts related to a URL or text
+      </p>
+      <div className="flex gap-2 mt-6 mb-2  ">
+        <input
+          placeholder="https://samwho.dev/memory-allocation/"
+          value={InputText}
+          onChange={(e) => setInputText(e.target.value)}
+          className="w-full px-4 py-4 h-full transition-all duration-200 bg-white/40 rounded-xl text-sm focus:bg-white/80  focus:outline-none disabled:cursor-not-allowed"
+          disabled={Submitted}
         />
+        <button
+          className="px-4 py-1 rounded-xl bg-white/40 hover:bg-white/80 transition-all duration-200 font-medium text-sm disabled:opacity-60 disabled:hover:bg-white/40 disabled:cursor-not-allowed"
+          disabled={Submitted}
+          onClick={buttonClick}
+        >
+          Submit
+        </button>
       </div>
+      {ErrorText.length > 0 ? (
+        <p className="text-red-500 text-sm ">{ErrorText}</p>
+      ) : null}
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+      {InputText.length === 0 && posts.length === 0 ? (
+        <div className="py-4">
+          <p className="text-slate-600 text-sm mb-4">Try an example:</p>
+          <div className="flex gap-2 mt-2">
+            <div
+              className="text-center w-full cursor-pointer flex flex-col items-center"
+              onClick={() =>
+                pushExample("Ressources to learn about distributed systems")
+              }
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24}>
+                <path fill="none" d="M0 0h24v24H0z" />
+                <path
+                  fill="currentColor"
+                  fillRule="evenodd"
+                  d="M2 7c0-1.886 0-2.828.586-3.414C3.172 3 4.114 3 6 3h12c1.886 0 2.828 0 3.414.586C22 4.172 22 5.114 22 7c0 1.886 0 2.828-.586 3.414C20.828 11 19.886 11 18 11H6c-1.886 0-2.828 0-3.414-.586C2 9.828 2 8.886 2 7Zm4-.75a.75.75 0 0 0 0 1.5h2a.75.75 0 0 0 0-1.5H6Zm4.25.75a.75.75 0 0 1 .75-.75h7a.75.75 0 0 1 0 1.5h-7a.75.75 0 0 1-.75-.75ZM2 17c0-1.886 0-2.828.586-3.414C3.172 13 4.114 13 6 13h12c1.886 0 2.828 0 3.414.586C22 14.172 22 15.114 22 17c0 1.886 0 2.828-.586 3.414C20.828 21 19.886 21 18 21H6c-1.886 0-2.828 0-3.414-.586C2 19.828 2 18.886 2 17Zm4-.75a.75.75 0 0 0 0 1.5h2a.75.75 0 0 0 0-1.5H6Zm4.25.75a.75.75 0 0 1 .75-.75h7a.75.75 0 0 1 0 1.5h-7a.75.75 0 0 1-.75-.75Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-sm mt-2">
+                Ressource about distributed systems
+              </p>
+              <p className="text-xs text-slate-600">(Text Query) </p>
+            </div>
+            <div
+              className="text-center w-full cursor-pointer flex flex-col items-center"
+              onClick={() =>
+                pushExample("What programming books should I read ?")
+              }
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24}>
+                <path fill="none" d="M0 0h24v24H0z" />
+                <g fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    d="M6.271 2.112c-.81.106-1.238.301-1.544.6-.305.3-.504.72-.613 1.513C4.002 5.042 4 6.124 4 7.675v8.57a4.172 4.172 0 0 1 1.299-.593c.528-.139 1.144-.139 2.047-.138H20V7.676c0-1.552-.002-2.634-.114-3.451-.109-.793-.308-1.213-.613-1.513-.306-.299-.734-.494-1.544-.6-.834-.11-1.938-.112-3.522-.112H9.793c-1.584 0-2.688.002-3.522.112Zm.488 4.483c0-.448.37-.811.827-.811h8.828a.82.82 0 0 1 .827.81.82.82 0 0 1-.827.811H7.586a.82.82 0 0 1-.827-.81Zm.827 2.973a.82.82 0 0 0-.827.81c0 .448.37.811.827.811h5.517a.82.82 0 0 0 .828-.81.82.82 0 0 0-.828-.811H7.586Z"
+                    clipRule="evenodd"
+                  />
+                  <path d="M7.473 17.135H20c-.003 1.13-.021 1.974-.113 2.64-.109.793-.308 1.213-.613 1.513-.306.299-.734.494-1.544.6-.834.11-1.938.112-3.522.112H9.793c-1.584 0-2.688-.002-3.522-.111-.81-.107-1.238-.302-1.544-.601-.305-.3-.504-.72-.613-1.513-.041-.3-.068-.637-.084-1.02a2.464 2.464 0 0 1 1.697-1.537c.29-.076.667-.083 1.746-.083Z" />
+                </g>
+              </svg>
+              <p className="text-sm mt-2">
+                What programming books should I read ?
+              </p>
+              <p className="text-xs text-slate-600">(Question Query)</p>
+            </div>
+            <div
+              className="text-center w-full cursor-pointer flex flex-col items-center"
+              onClick={() =>
+                pushExample("https://samwho.dev/memory-allocation/")
+              }
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24}>
+                <path fill="none" d="M0 0h24v24H0z" />
+                <path
+                  fill="currentColor"
+                  d="M9 15V9h6v6H9Zm0 6v-2H7q-.825 0-1.413-.588T5 17v-2H3v-2h2v-2H3V9h2V7q0-.825.588-1.413T7 5h2V3h2v2h2V3h2v2h2q.825 0 1.413.588T19 7v2h2v2h-2v2h2v2h-2v2q0 .825-.588 1.413T17 19h-2v2h-2v-2h-2v2H9Zm8-4V7H7v10h10Z"
+                />
+              </svg>
+              <p className="text-sm mt-2">Memory allocation</p>
+              <p className="text-xs text-slate-600">
+                from Samwho.dev
+                <br />
+                (Article query)
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
+      <div
+        id="posts"
+        className="w-full flex flex-col min-h-[inherit] h-full gap-2"
+      >
+        {posts.length > 0
+          ? posts
+              .slice(0, 20)
+              .map((post) => <PostComponent key={post.id} post={post} />)
+          : null}
+        {error != undefined && posts.length === 0 && !Submitted ? (
+          <p className=" tracking-tight font-medium text-base my-auto text-center ">
+            {error} <br />
+            Retry with another URL.
           </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+        ) : null}
+        {
+          // Show a loading indicator if the user has submitted a URL
+          Submitted ? <Skeleton /> : null
+        }
       </div>
     </main>
-  )
+  );
 }
