@@ -5,6 +5,7 @@ import Link from "next/link";
 import Skeleton from "../components/skeleton";
 import PostComponent from "../components/posts";
 import type { InferGetServerSidePropsType, GetServerSideProps } from "next";
+import { url } from "inspector";
 
 async function getDataFromAPI(text: string): Promise<Post[]> {
   let isURL = false;
@@ -163,7 +164,25 @@ export default function Home({
   return (
     <main className="min-h-[inherit]">
       <Head>
-        <title>HN - Recommendation {InputText ? "for " + InputText : ""}</title>
+        <title>{"HN - Recommendation"}</title>
+        <meta
+          name="description"
+          content="Get popular Hacker News posts related to a URL or text thanks to machine learning. It's open source and free to use."
+        />
+        <meta property="og:title" content={"HN - Recommendation"} />
+        <meta
+          property="og:description"
+          content="HN recommandation gives you the most popular Hacker News posts related to a URL or text. It uses a machine learning model to find the most similar posts. It's open source and free to use."
+        />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="HN - Recommendation" />
+
+        {/* Favicon */}
+        <link rel="icon" href="/favicon.png" />
       </Head>
       <Link href="/">
         <h1 className="text-2xl md:text-4xl font-bold leading-1">

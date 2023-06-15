@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { Inter } from "next/font/google";
 import Link from "next/link";
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -46,6 +47,18 @@ export default function App({ Component, pageProps }: AppProps) {
           This is a personal project, not affiliated with Hacker News.
         </p>
       </footer>
+      <Script
+        src="https://sa.hn-recommend.julienc.me/latest.js"
+        data-collect-dnt="true"
+      />
+      <noscript>
+        {/* eslint-disable @next/next/no-img-element */}
+        <img
+          src="https://sa.hn-recommend.julienc.me/noscript.gif"
+          alt=""
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </noscript>
     </>
   );
 }

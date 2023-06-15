@@ -91,6 +91,7 @@ pyrightconfig.json
 /.vscode
 .gut
 *.duckdb
+/next
 
 *Dockerfile
 .dockerignore
