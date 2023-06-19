@@ -105,6 +105,7 @@ export type Post = {
   comments: number;
   time: number;
   author: string;
+  distance: number;
 };
 
 export default function Home({
@@ -117,6 +118,7 @@ export default function Home({
   const [InputText, setInputText] = useState<string>(query);
   const [Submitted, setSubmitted] = useState<boolean>(false);
   const [ErrorText, setErrorText] = useState(!error ? "" : error);
+  const [SortingType, setSortingType] = useState("relevance");
 
   // Reset state when the URL changes
   useEffect(() => {
@@ -131,6 +133,19 @@ export default function Home({
     error = undefined;
     posts.length = 0;
     router.push("/?q=" + encodeURIComponent(text));
+  }
+
+  function isAGoodInput(text: string) {
+    if (text.length === 0) {
+      return true;
+    }
+    if (text.split(" ").length > 1) {
+      return true;
+    }
+    if (text.startsWith("https://") || text.startsWith("http://")) {
+      return true;
+    }
+    return false;
   }
 
   // Called when the user clicks the submit button
@@ -159,6 +174,21 @@ export default function Home({
     error = undefined;
     posts.length = 0;
     router.push("/?q=" + encodeURIComponent(InputText));
+  }
+
+  function sortArray(type: string, a: Post, b: Post) {
+    if (type === "relevance") {
+      return b.distance - a.distance;
+    } else if (type === "newest") {
+      return b.time - a.time;
+    } else if (type === "oldest") {
+      return a.time - b.time;
+    } else if (type === "comments") {
+      return b.comments - a.comments;
+    } else if (type === "score") {
+      return b.score - a.score;
+    }
+    return 0;
   }
 
   return (
@@ -192,7 +222,11 @@ export default function Home({
       <p className="text-slate-600">
         Get popular Hacker News posts related to a URL or text
       </p>
-      <div className="flex gap-2 mt-6 mb-2  ">
+      {/* <p className=" bg-white/20 p-4 rounded-xl mt-2 text-sm">
+        ⚠️ To get better search results, input a sentence, a paragraph or an url
+        instead of a single word
+      </p> */}
+      <div className="flex gap-2 mt-2 mb-2  ">
         <input
           placeholder="https://samwho.dev/memory-allocation/"
           value={InputText}
@@ -211,6 +245,12 @@ export default function Home({
       {ErrorText.length > 0 ? (
         <p className="text-red-500 text-sm ">{ErrorText}</p>
       ) : null}
+      {isAGoodInput(InputText) ? null : (
+        <div className="bg-white/50 p-4 rounded-xl mt-2 text-sm mb-4">
+          ⚠️ Because of the way the model works, it&apos;s better to input a
+          sentence, a paragraph or an url instead of a single word
+        </div>
+      )}
 
       {InputText.length === 0 && posts.length === 0 ? (
         <div className="py-4">
@@ -286,8 +326,23 @@ export default function Home({
         id="posts"
         className="w-full flex flex-col min-h-[inherit] h-full gap-2"
       >
+        {posts.length > 0 ? (
+          <div>
+            <select
+              onChange={(e) => setSortingType(e.target.value)}
+              value={SortingType}
+            >
+              <option value="relevance">Relevance</option>
+              <option value="oldest">Oldest</option>
+              <option value="newest">Newest</option>
+              <option value="score">Score</option>
+              <option value="comments">Comments</option>
+            </select>
+          </div>
+        ) : null}
         {posts.length > 0
           ? posts
+              .sort((a, b) => sortArray(SortingType, a, b))
               .slice(0, 20)
               .map((post) => <PostComponent key={post.id} post={post} />)
           : null}
