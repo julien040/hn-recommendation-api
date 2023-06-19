@@ -39,7 +39,10 @@ export default function App({ Component, pageProps }: AppProps) {
         <br />
         <p>
           To learn more about the project, check the{" "}
-          <Link className="hover:underline" href="https://julienc.me/whoami">
+          <Link
+            className="hover:underline"
+            href="https://julienc.me/articles/Extract_embeddings_Hacker_News_article"
+          >
             blog post
           </Link>
         </p>
