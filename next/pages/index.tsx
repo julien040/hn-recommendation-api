@@ -5,7 +5,6 @@ import Link from "next/link";
 import Skeleton from "../components/skeleton";
 import PostComponent from "../components/posts";
 import type { InferGetServerSidePropsType, GetServerSideProps } from "next";
-import { url } from "inspector";
 
 async function getDataFromAPI(text: string): Promise<Post[]> {
   let isURL = false;
@@ -178,7 +177,7 @@ export default function Home({
 
   function sortArray(type: string, a: Post, b: Post) {
     if (type === "relevance") {
-      return b.distance - a.distance;
+      return a.distance - b.distance;
     } else if (type === "newest") {
       return b.time - a.time;
     } else if (type === "oldest") {
@@ -271,9 +270,7 @@ export default function Home({
                   clipRule="evenodd"
                 />
               </svg>
-              <p className="text-sm mt-2">
-                Resource about distributed systems
-              </p>
+              <p className="text-sm mt-2">Resource about distributed systems</p>
               <p className="text-xs text-slate-600">(Text Query) </p>
             </div>
             <div
@@ -343,7 +340,7 @@ export default function Home({
         {posts.length > 0
           ? posts
               .sort((a, b) => sortArray(SortingType, a, b))
-              .slice(0, 20)
+              .slice(0, 50)
               .map((post) => <PostComponent key={post.id} post={post} />)
           : null}
         {error != undefined && posts.length === 0 && !Submitted ? (

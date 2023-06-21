@@ -47,13 +47,6 @@ const PostComponent = ({ post }: { post: Post }) => {
           >
             {format(post.time * 1000)}
           </Link>
-          {" | "}
-          <Link
-            className="hover:underline"
-            href={`/?q=${encodeURIComponent(post.url)}`}
-          >
-            <span className="text-black/60">related</span>
-          </Link>
         </div>
       </div>
     </div>
