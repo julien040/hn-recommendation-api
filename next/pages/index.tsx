@@ -259,7 +259,7 @@ export default function Home({
             <div
               className="text-center w-full cursor-pointer flex flex-col items-center"
               onClick={() =>
-                pushExample("Ressources to learn about distributed systems")
+                pushExample("Resources to learn about distributed systems")
               }
             >
               <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24}>
@@ -272,14 +272,14 @@ export default function Home({
                 />
               </svg>
               <p className="text-sm mt-2">
-                Ressource about distributed systems
+                Resource about distributed systems
               </p>
               <p className="text-xs text-slate-600">(Text Query) </p>
             </div>
             <div
               className="text-center w-full cursor-pointer flex flex-col items-center"
               onClick={() =>
-                pushExample("What programming books should I read ?")
+                pushExample("What programming books should I read?")
               }
             >
               <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24}>
@@ -294,7 +294,7 @@ export default function Home({
                 </g>
               </svg>
               <p className="text-sm mt-2">
-                What programming books should I read ?
+                What programming books should I read?
               </p>
               <p className="text-xs text-slate-600">(Question Query)</p>
             </div>
