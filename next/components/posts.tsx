@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import type { Post } from "../pages";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,7 +8,7 @@ const PostComponent = ({ post }: { post: Post }) => {
   const domain = new URL(post.url).hostname;
   return (
     <div className="flex gap-4 bg-white/30 rounded-xl p-4">
-      <Image
+      <img
         src={`https://www.google.com/s2/favicons?domain=${domain}&sz=256`}
         width={32}
         height={32}
